@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ads to earn - Earning Bot</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
+    <script src='//libtl.com/sdk.js' data-zone='10076485' data-sdk='show_10076485'></script>
+    
+    <script type='text/javascript' src='https://otieu.com/4/10061162.js'></script>
+    
+    <style>
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        <p class="mt-4 text-gray-700 font-semibold">Loading User Data...</p>
+        <p class="mt-1 text-sm text-gray-500">Welcome to the Earning App!</p>
+    </div>
+
+    <div id="statusMessage" class="fixed top-0 left-0 right-0 p-4 text-center z-50 transition-all duration-300 opacity-0 transform -translate-y-full"></div>
+
+    <div id="appContainer" class="p-4 pt-8 max-w-lg mx-auto hidden">
+
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+            <p class="text-sm text-gray-500">Total Balance</p>
+            <h2 class="text-4xl font-extrabold text-blue-600 mt-1 flex items-center">
+                ৳ <span id="currentBalance">0.00</span>
+                <span id="userUIDDisplay" class="text-xs text-gray-400 ml-3">(ID: Loading...)</span>
+            </h2>
+        </div>
+
+        <div id="earnSection" class="bg-white rounded-xl shadow-lg p-6 mb-6">
+            <h3 class="text-lg font-semibold text-center text-blue-600 mb-4 flex items-center justify-center">
+                <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c1.657 0 3 .895 3 2s-1.343 2-3 2-3 .895-3 2 1.343 2 3 2m0-8V4m0 12v4m-6-3l-4 4V1m17 0l4 4V1"></path></svg>
+                Earn Rewards
+            </h3>
+            
+            <p class="text-sm text-gray-500 text-center mb-3">Today's Progress:</p>
+            <p class="text-xl font-bold text-center mb-4">Completed: <span id="adsWatched">0</span> / 50</p>
+
+            <button id="rewardedBtn" 
+                    class="w-full bg-gray-400 text-white py-3 rounded-lg font-bold shadow-md transition duration-300 flex items-center justify-center" 
+                    disabled>
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                বিজ্ঞাপন দেখুন ও আয় করুন
+            </button>
+            <p class="text-xs text-gray-500 text-center mt-2">প্রতিটি বিজ্ঞাপনের জন্য BDT 0.02 পাবেন।</p>
+        </div>
+        
+        <div id="withdrawSection" class="bg-white rounded-xl shadow-lg p-6">
+            <h3 class="text-lg font-semibold text-center text-red-600 mb-4 flex items-center justify-center">
+                <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                Withdraw
+            </h3>
+            <p class="text-sm text-gray-500 text-center mb-3">Minimum Withdrawal: ৳ 50.00</p>
+
+            <button id="mainWithdrawBtn" 
+                    class="w-full bg-gray-400 text-white py-3 rounded-lg font-bold shadow-md transition duration-300" 
+                    disabled>
+                Withdraw Balance
+            </button>
+            <p class="text-xs text-gray-500 text-center mt-2">বর্তমানে শুধুমাত্র বিকাশ/নগদ-এ উইথড্র করা সম্ভব।</p>
+        </div>
+
+        <div class="mt-6 text-center">
+            <a href="https://youtube.com/@mdariftips48" target="_blank" class="text-blue-500 hover:underline font-medium flex items-center justify-center">
+                <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h-2c-1.1 0-2 0.9-2 2v3m0 0v1m4-4h2c1.1 0 2 0.9 2 2v3m0 0v1M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                Join Our Channel for Updates
+            </a>
+        </div>
+        
+        </div>
+
+    <script>
+        // **********************************************
+        // 1. UPDATED FIREBASE CONFIGURATION
+        // **********************************************
+        const firebaseConfig = {
+            apiKey: "AIzaSyDUl-M5nPgHL_L5o6nOkHeQVlnOR8KjcCg",
+            authDomain: "ads-to.firebaseapp.com",
+            databaseURL: "https://ads-to-default-rtdb.firebaseio.com",
+            projectId: "ads-to",
+            storageBucket: "ads-to.firebasestorage.app",
+            messagingSenderId: "530775977235",
+            appId: "1:530775977235:web:ef002abbd9de97fb22fee6"
+        };
+        // **********************************************
+
+        // Initialize Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // DOM elements
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const appContainer = document.getElementById('appContainer');
+        const rewardedBtn = document.getElementById('rewardedBtn');
+        const mainWithdrawBtn = document.getElementById('mainWithdrawBtn');
+        const currentBalanceDisplay = document.getElementById('currentBalance');
+        const adsWatchedDisplay = document.getElementById('adsWatched');
+        const userUIDDisplay = document.getElementById('userUIDDisplay');
+        const statusMessage = document.getElementById('statusMessage');
+
+        // Global variables
+        let userData = { balance: 0.00, ads_watched_today: 0 };
+        let userUID = '';
+        const AD_REWARD = 0.02;
+        const DAILY_AD_LIMIT = 50;
+        const MIN_WITHDRAWAL = 50.00;
+        
+        // **********************************************
+        // 2. UPDATED ADMIN/MASTER UID FOR TESTING
+        // **********************************************
+        const MASTER_UID = "IRanwaVK9vVvMxw1D8oF1LLlW2g2"; 
+        // **********************************************
+
+
+        // --- Utility Functions ---
+        
+        function showStatus(message, type, duration = 3000) {
+            statusMessage.textContent = message;
+            statusMessage.className = 'fixed top-0 left-0 right-0 p-4 text-center z-50 transition-all duration-300';
+            
+            if (type === 'success') {
+                statusMessage.classList.add('bg-green-500', 'text-white');
+            } else if (type === 'error') {
+                statusMessage.classList.add('bg-red-500', 'text-white');
+            } else {
+                statusMessage.classList.add('bg-yellow-500', 'text-gray-800');
+            }
+            
+            statusMessage.classList.remove('opacity-0', '-translate-y-full');
+            statusMessage.classList.add('opacity-100', 'translate-y-0');
+
+            setTimeout(() => {
+                statusMessage.classList.remove('opacity-100', 'translate-y-0');
+                statusMessage.classList.add('opacity-0', '-translate-y-full');
+            }, duration);
+        }
+
+        function updateUI() {
+            currentBalanceDisplay.textContent = userData.balance.toFixed(2);
+            adsWatchedDisplay.textContent = userData.ads_watched_today;
+            
+            // Update button state
+            rewardedBtn.disabled = userData.ads_watched_today >= DAILY_AD_LIMIT;
+            rewardedBtn.classList.toggle('bg-blue-500', !rewardedBtn.disabled);
+            rewardedBtn.classList.toggle('bg-gray-400', rewardedBtn.disabled);
+            
+            if (rewardedBtn.disabled) {
+                rewardedBtn.textContent = 'দৈনিক সীমা পূরণ হয়েছে';
+            } else {
+                rewardedBtn.innerHTML = `<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> বিজ্ঞাপন দেখুন ও আয় করুন`;
+            }
+
+            mainWithdrawBtn.disabled = userData.balance < MIN_WITHDRAWAL;
+            mainWithdrawBtn.classList.toggle('bg-red-500', !mainWithdrawBtn.disabled);
+            mainWithdrawBtn.classList.toggle('bg-gray-400', mainWithdrawBtn.disabled);
+        }
+
+        // --- Firebase/Ad Logic ---
+
+        // Function to handle the actual balance and ad count update
+        async function handleAdSuccessTransaction() {
+            if (userData.ads_watched_today >= DAILY_AD_LIMIT) {
+                showStatus('দৈনিক সীমা পূরণ হয়েছে!', 'error');
+                return;
+            }
+
+            const userRef = db.collection('users').doc(userUID);
+            const today = new Date().toISOString().split('T')[0];
+
+            try {
+                await db.runTransaction(async (transaction) => {
+                    const doc = await transaction.get(userRef);
+                    if (!doc.exists) {
+                         // Should not happen if user is authenticated
+                        throw "User document does not exist!";
+                    }
+
+                    const currentData = doc.data();
+                    let newBalance = currentData.balance + AD_REWARD;
+                    let newAdsWatched = currentData.ads_watched_today;
+                    let newLastAdDate = currentData.last_ad_date;
+                    
+                    // Reset ad count if new day
+                    if (newLastAdDate !== today) {
+                        newAdsWatched = 0;
+                        newLastAdDate = today;
+                    }
+                    
+                    if (newAdsWatched < DAILY_AD_LIMIT) {
+                        newAdsWatched += 1;
+                        
+                        // Update Firestore
+                        transaction.update(userRef, {
+                            balance: newBalance,
+                            ads_watched_today: newAdsWatched,
+                            last_ad_date: today
+                        });
+
+                        // Success message (Note: UI updates via onSnapshot listener)
+                        showStatus(`Success! ৳ ${AD_REWARD.toFixed(2)} has been added.`, 'success');
+                    } else {
+                        throw "Daily limit exceeded during transaction.";
+                    }
+                });
+
+            } catch (e) {
+                console.error("Transaction failed: ", e);
+                showStatus('An error occurred. Please try again.', 'error');
+            } finally {
+                rewardedBtn.disabled = false; // Re-enable button
+            }
+        }
+        
+        // This function calls the ad and handles the reward on success
+        function requestAd() {
+            if (userData.ads_watched_today >= DAILY_AD_LIMIT) {
+                showStatus('আজকের জন্য আপনার বিজ্ঞাপনের সীমা পূরণ হয়েছে।', 'error');
+                return;
+            }
+            
+            // Disable button to prevent double-click
+            rewardedBtn.disabled = true;
+            rewardedBtn.textContent = 'Loading Ad...';
+
+            // Check if the Monetag ad function is available
+            if (typeof show_10076485 === 'function') {
+                show_10076485().then(() => {
+                    // *** Reward is granted here after successful ad view/interaction ***
+                    handleAdSuccessTransaction(); 
+                }).catch(error => {
+                    console.error("Monetag Ad failed or cancelled:", error);
+                    showStatus("Ad cancelled or error. Please try again.", 'error', 5000);
+                    rewardedBtn.disabled = false; // Re-enable on failure
+                });
+            } else {
+                // Fallback/Simulation: If Ad script didn't load (e.g., due to TWA restrictions)
+                console.warn("Ad function not loaded. Running direct transaction.");
+                handleAdSuccessTransaction();
+            }
+        }
+        
+        // Function to listen to user data changes
+        function setupDataListener() {
+            db.collection('users').doc(userUID).onSnapshot(doc => {
+                if (doc.exists) {
+                    const data = doc.data();
+                    userData = {
+                        balance: data.balance || 0.00,
+                        ads_watched_today: data.ads_watched_today || 0,
+                        last_ad_date: data.last_ad_date || ''
+                    };
+                }
+                updateUI();
+            }, error => {
+                console.error("Error listening to user data:", error);
+                showStatus('Data connection lost. Please reload.', 'error');
+            });
+        }
+        
+        // Function to initialize the app (run after Firebase Auth is successful)
+        function initializeAppLogic(uid) {
+            userUID = uid;
+            userUIDDisplay.textContent = `(ID: ${uid.substring(0, 5)}...)`;
+
+            // Setup Firestore listener
+            setupDataListener();
+
+            // Setup event listeners
+            rewardedBtn.addEventListener('click', requestAd);
+            mainWithdrawBtn.addEventListener('click', () => {
+                alert('Withdrawal feature is not fully implemented yet.');
+                // Here you would typically open a form for withdrawal details
+            });
+
+            // Hide loading screen and show app
+            loadingOverlay.classList.add('hidden');
+            appContainer.classList.remove('hidden');
+        }
+
+        // --- Authentication Logic ---
+
+        // The core logic to handle TWA user ID and Firebase Auth
+        window.firebaseAuthPromise = new Promise((resolve, reject) => {
+            // Check for Telegram Web App data (if running inside Telegram)
+            let telegramUserId = null;
+            if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
+                telegramUserId = window.Telegram.WebApp.initDataUnsafe.user.id.toString();
+                // For TWA, we use the Telegram ID as the Firebase Custom Token ID
+            }
+            
+            // If running outside TWA or without Telegram data, use a fallback (e.g., Anonymous or a fixed ID for testing)
+            let authId = telegramUserId || MASTER_UID; 
+
+            // Sign in anonymously if TWA data is missing or use the master UID for fallback
+            if (authId === MASTER_UID) {
+                auth.signInAnonymously()
+                    .then((userCredential) => {
+                        console.log("Signed in anonymously as fallback:", userCredential.user.uid);
+                        resolve(userCredential.user.uid);
+                    })
+                    .catch((error) => {
+                        console.error("Anonymous Sign-in failed:", error);
+                        showStatus('Authentication Failed! Check Firebase Config/Rules.', 'error');
+                        reject(error);
+                    });
+            } else {
+                // If TWA data is present, you would typically use a Cloud Function 
+                // to get a custom token for the Telegram ID, but for this simple setup, 
+                // we'll just sign in anonymously and use the anonymous UID for Firestore.
+                // NOTE: Using Telegram ID directly for Firestore doc ID is recommended 
+                // for production, but requires Custom Token Auth. Sticking to Anonymous Auth for simplicity.
+                auth.signInAnonymously()
+                    .then((userCredential) => {
+                        console.log("Signed in anonymously (TWA assumed):", userCredential.user.uid);
+                        resolve(userCredential.user.uid);
+                    })
+                    .catch((error) => {
+                        console.error("Anonymous Sign-in failed (TWA assumed):", error);
+                        showStatus('Authentication Failed! Check Firebase Config/Rules.', 'error');
+                        reject(error);
+                    });
+            }
+        });
+
+        // Run the initialization logic after authentication is complete
+        window.firebaseAuthPromise
+            .then(uid => {
+                // Check if user document exists, if not, create initial data
+                const userRef = db.collection('users').doc(uid);
+                userRef.get().then(doc => {
+                    if (!doc.exists) {
+                        console.log("Creating initial user data for UID:", uid);
+                        userRef.set({
+                            balance: 0.00,
+                            ads_watched_today: 0,
+                            last_ad_date: new Date().toISOString().split('T')[0]
+                        }).then(() => {
+                            initializeAppLogic(uid);
+                        }).catch(err => {
+                            console.error("Error setting initial data:", err);
+                            showStatus('Error setting up user data.', 'error');
+                        });
+                    } else {
+                        // User data exists, proceed
+                        initializeAppLogic(uid);
+                    }
+                }).catch(err => {
+                    console.error("Error checking user document:", err);
+                    showStatus('Error checking user data.', 'error');
+                });
+            })
+            .catch(error => {
+                console.error("App Initialization Failed:", error);
+                // The loading screen will remain visible with an error message
+            });
+
+    </script>
+</body>
+</html>
